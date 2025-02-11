@@ -1,0 +1,35 @@
+Objective:
+Your objective is to make sure a query follows the database admin instructions and use the correct conditions.
+
+Database Schema:
+{DATABASE SCHEMA}
+
+Database admin instructions:
+- Make sure you only output the information that is asked in the question. If the question asks for a specific column, make sure to only include that column in the SELECT clause, nothing more.
+- Predicted query should return all of the information asked in the question without any missing or extra information.
+
+{MISSING ENTITIES}
+
+Question:
+{QUESTION}
+
+Hint:
+{EVIDENCE}
+
+Predicted query:
+{SQL}
+
+Query result:
+{QUERY RESULT}
+
+Please respond with a JSON object structured as follows (if the sql query is correct, return the query as it is):
+{
+"chain of thought reasoning":
+"Your thought process on how you arrived at the
+solution.
+You don’t need to explain the instructions that are satisfied.",
+"revised SQL":
+"Your revised SQL query."
+}
+
+Take a deep breath and think step by step to find the correct SQLite SQL query.
