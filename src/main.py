@@ -1,6 +1,12 @@
-import mysql.connector
-from dotenv import load_dotenv
+from templates import PromptTemplate
+from pathlib import Path
+
 import os
+import json
+
+from dotenv import load_dotenv
+import mysql.connector
+
 
 class DatabaseConnector():
     def __init__(self, db_config: dict[str,str]):
@@ -45,7 +51,15 @@ class DatabaseConnector():
     def get_database_schema(self):
         pass
 
+class PromptPreparer():
+    def __init__(self, template_json_path:Path|str):
+        with open(template_json_path, 'r', encoding='utf-8') as json_file:
+            data=dict(json.load(json_file))
 
+        self.__prompt_templates={prompt_name:PromptTemplate(raw_template) for prompt_name, raw_template in data.items()}
+
+    def fill(self, template_name:str, replacements:dict[str,str]):
+        return self.__prompt_templates[template_name].replace_all(replacements)
 
 
 if __name__=="__main__":
