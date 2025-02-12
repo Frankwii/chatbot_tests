@@ -1,55 +1,10 @@
 from templates import PromptTemplate
 from pathlib import Path
+from dotenv import load_dotenv
+from database_connector import DatabaseConnector
 
 import os
 import json
-
-from dotenv import load_dotenv
-import mysql.connector
-
-
-class DatabaseConnector():
-    def __init__(self, db_config: dict[str,str]):
-        self.__connection=mysql.connector.connect(**db_config)
-
-    def __execute_query(self, query:str, params:str|tuple[str]|None=None):
-        """
-        Takes a (possibly parametrized) query and executes it handling errors in the execution. A parametrized query simply offers a way to safely insert strings with possibly conflictive characters. For instance, the string "The UK's Cheapest Energy" could raise an error because of the quotation inside if not properly escaped to "The UK\'s Cheapest Energy".
-
-        Args:
-            - query (str): The parametrized query (i.e. with an '%s' as a placeholder)
-            - params (
-        """
-        if isinstance(params, str):
-            params=(params,)
-        self.__connection = mysql.connector.connect(**db_config)
-        cursor = self.__connection.cursor(buffered=True) # MariaDB complains without the buffered=True
-    
-        try:
-            cursor.execute(query, params)
-            self.__connection.commit()
-        except Exception as e:
-            print("Couldn't process query!")
-            print("=========QUERY=========")
-            print(query)
-            print("=========ERROR=========")
-            print(e)
-            print("=======================")
-    
-        data=None
-        if cursor.with_rows:
-            data=cursor.fetchall()
-        cursor.close()
-        self.__connection.close()
-    
-        return [] if data is None else data
-
-    def get_table_schema(self, table_name:str):
-        query="DESCRIBE %s"
-        return self.__execute_query(query, params=table_name)
-
-    def get_database_schema(self):
-        pass
 
 class PromptPreparer():
     def __init__(self, template_json_path:Path|str):
@@ -58,8 +13,12 @@ class PromptPreparer():
 
         self.__prompt_templates={prompt_name:PromptTemplate(raw_template) for prompt_name, raw_template in data.items()}
 
-    def fill(self, template_name:str, replacements:dict[str,str]):
-        return self.__prompt_templates[template_name].replace_all(replacements)
+    def fill_prompt(self, prompt_template_name:str, replacements:dict[str,str])->str:
+        return self.__prompt_templates[prompt_template_name].replace_all(replacements)
+
+    @staticmethod
+    def format_schema(schema:list)->str:
+        pass
 
 
 if __name__=="__main__":
@@ -76,4 +35,8 @@ if __name__=="__main__":
         'database': db_name
     }
 
-    pass
+    connector=DatabaseConnector(db_config)
+
+    schema=connector.get_table_schema("padron_test")
+
+    print(schema)
