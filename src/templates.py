@@ -1,11 +1,12 @@
 from __future__ import annotations
 from pathlib import Path
 from functools import reduce
+from abc import ABC, abstractmethod
 
 import json
 import re
 
-class PromptTemplate():
+class Template(ABC):
     def __init__(self, template:str, placeholders:set[str]|None=None):
         self.__template=template
         if placeholders is None:
@@ -13,20 +14,30 @@ class PromptTemplate():
         else:
             self.__placeholders=placeholders
 
-    def __find_placeholders(self):
+    # TODO: Is this in the correct order?
+    @staticmethod
+    @abstractmethod
+    def _format_placeholder_for_replacing(placeholder:str)->str:
+        pass
+
+    @property
+    @abstractmethod
+    def _placeholder_match_pattern(self)->str:
+        pass
+
+    def __find_placeholders(self)->set[str]:
         """
         Find all placeholders in a raw string using a regex.
         Valid placeholders contain only capital letters, numbers, underscores and whitespace
         """
-        pattern=r"{([A-Z0-9_ ]+)}"
-        return set(re.findall(pattern, self.__template))
+        return set(re.findall(self._placeholder_match_pattern, self.__template))
 
     def __to_string(self)->str:
         """
         Casts a template to a string, checking whether any placeholders have been left out.
         """
         if not self.is_filled():
-            print(f"WARNING: Casting a non-filled template to string. Remaining placeholders are the following: {self.__placeholders}")
+            print(f"WARNING: Casting an unfilled template to a string. Remaining placeholders are the following: {self.__placeholders}")
         return self.__template
 
     def is_filled(self)->bool:
@@ -35,7 +46,7 @@ class PromptTemplate():
         """
         return not bool(self.__placeholders)
 
-    def unsafe_replace_one(self, placeholder:str, content:str)->PromptTemplate:
+    def unsafe_replace_one(self, placeholder:str, content:str)->Template:
         """
         Replaces all instances of the placeholder (if any) by the specified content.
 
@@ -47,12 +58,12 @@ class PromptTemplate():
         Returns:
             - Template: Another Template object with the specified placeholder having been replaced.
         """
-        new_template=self.__template.replace("{"+placeholder+"}", content)
+        new_template=self.__template.replace(self._format_placeholder_for_replacing(placeholder), content)
         new_placeholders=self.__placeholders-{placeholder}
 
         return self.__class__(new_template, new_placeholders)
 
-    def replace_one(self, placeholder:str, content:str)->PromptTemplate:
+    def replace_one(self, placeholder:str, content:str)->Template:
         """
         Replaces all instances of the placeholder by the specified content, but throws an error if the placeholder is not present in the template.
 
@@ -90,6 +101,15 @@ class PromptTemplate():
 
     def __str__(self)->str:
         return self.__to_string()
+
+class PromptTemplate(Template):
+    @staticmethod
+    def _format_placeholder_for_replacing(placeholder:str)->str:
+        return "{"+placeholder+"}"
+
+    @property
+    def _placeholder_match_pattern(self)->str:
+        return r"{([A-Z0-9_ ]+)}"
 
 class PromptPreparer():
     def __init__(self, template_json_path:Path|str):
